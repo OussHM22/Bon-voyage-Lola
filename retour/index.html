@@ -36,7 +36,6 @@
   .btn:active { transform:scale(.95); background:rgba(var(--glow),.3); }
   .btn:disabled { opacity:.8; }
   #open { animation:fadeUp 1.6s .7s both, pulse 2.6s 2.3s infinite; }
-  #open[hidden], .hint[hidden], #skip[hidden] { display:none; }
 
   /* ---------- Schede ---------- */
   .card {
@@ -80,19 +79,6 @@
   #lines p { position:absolute; left:0; right:0; top:0; margin:0; opacity:0; transform:translateY(14px); transition:opacity 1.3s ease, transform 1.3s ease; }
   #lines p.on { opacity:1; transform:none; }
 
-  /* ---------- Musica ---------- */
-  /* il player YouTube sta nell'intro: su iPhone (e su Instagram) l'audio parte solo toccando il video */
-  #music {
-    width:280px; height:158px; border-radius:16px; overflow:hidden;
-    box-shadow:0 0 0 1px rgba(255,230,180,.6), 0 0 26px rgba(var(--glow),.45);
-    animation:fadeUp 1.6s .5s both;
-  }
-  #music.off { display:none; }
-  .hint { font-family:'Quicksand', sans-serif; font-size:1.05rem; opacity:.95; margin-top:-14px; animation:fadeUp 1.6s .9s both; }
-  #skip {
-    font-family:'Quicksand', sans-serif; font-size:.95rem; color:var(--text); opacity:.75;
-    background:none; border:none; text-decoration:underline; cursor:pointer; margin-top:-8px;
-  }
 
   /* ---------- Scena ---------- */
   .wave, .leaf { transform-box:fill-box; }
@@ -119,10 +105,7 @@
 
 <div id="intro">
   <p class="intro-text">Lola, un petit mot avant ton vol retour…</p>
-  <div id="music"><div id="yt"></div></div>
-  <p class="hint" id="hint">▶ Appuie sur la vidéo pour ouvrir, en musique 🎵</p>
-  <button id="skip">ouvrir sans musique</button>
-  <button id="open" class="btn" hidden>Ouvrir ✨</button>
+  <button id="open" class="btn">Ouvrir ✨</button>
 </div>
 
 <svg id="sky" viewBox="0 0 360 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
@@ -175,7 +158,6 @@
   const durata = t => Math.max(3.2, 2.2 + t.length * .045);
   // Notifica sul telefono con la risposta di Lola (app "ntfy", iscriviti a questo topic). Lascia "" per disattivarla.
   const NTFY_TOPIC = "lola-bv-4n8w2q7z";
-  const YOUTUBE_ID = "bf43dRUBSks"; // Wiz Khalifa – The Thrill [Official Audio]
   /* ============================== */
 
   const $ = id => document.getElementById(id);
@@ -198,36 +180,6 @@
       .then(r => { if (!r.ok) throw new Error(r.status); });
   }
 
-  /* ---------- Musica (YouTube) ---------- */
-  // Il video nell'intro fa da pulsante: quando parte la musica, si apre la pagina
-  let player, playerReady = false;
-  window.onYouTubeIframeAPIReady = () => {
-    player = new YT.Player('yt', {
-      width: 280, height: 158, videoId: YOUTUBE_ID,
-      playerVars: { playsinline: 1, controls: 1, rel: 0, modestbranding: 1 },
-      events: {
-        onReady: () => { playerReady = true; try { player.setVolume(70); } catch (e) {} },
-        onStateChange: e => { if (e.data === YT.PlayerState.PLAYING) openPage(); },
-        onError: noMusic
-      }
-    });
-  };
-  (function loadYT() {
-    const s = document.createElement('script');
-    s.src = 'https://www.youtube.com/iframe_api';
-    s.onerror = noMusic;
-    document.head.appendChild(s);
-  })();
-  // se YouTube non risponde, torna il pulsante classico
-  setTimeout(() => { if (!playerReady) noMusic(); }, 7000);
-
-  function noMusic() {
-    if (started) return;
-    $('music').classList.add('off');
-    $('hint').hidden = true;
-    $('skip').hidden = true;
-    $('open').hidden = false;
-  }
 
   /* ---------- Schede ---------- */
   let current = null;
@@ -478,13 +430,7 @@
     $('intro').classList.add('hide');
     playLines(() => show('c-time'));
   }
-  // senza toccare il video: sul computer la musica parte lo stesso, su iPhone no
-  const openWithoutTap = () => {
-    if (playerReady) try { player.playVideo(); } catch (e) {}
-    openPage();
-  };
-  $('open').addEventListener('click', openWithoutTap);
-  $('skip').addEventListener('click', openWithoutTap);
+  $('open').addEventListener('click', openPage);
 
   document.addEventListener('pointerdown', e => { if (started && !e.target.closest('button')) sparkles(e.clientX, e.clientY); });
 </script>
